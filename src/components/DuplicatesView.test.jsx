@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DuplicatesView } from './DuplicatesView';
+import { DuplicatesView, buildWhatsAppMessage } from './DuplicatesView';
 
 const { fromMock } = vi.hoisted(() => ({ fromMock: vi.fn() }));
 
@@ -54,5 +54,55 @@ describe('DuplicatesView', () => {
         await waitFor(() => {
             expect(screen.getByText(/Messi/i)).toBeInTheDocument();
         });
+    });
+
+    it('debería devolver un mensaje vacío cuando no hay repetidas', () => {
+        expect(buildWhatsAppMessage([])).toBe('');
+    });
+
+    it('debería agrupar las repetidas por país y mostrar el sufijo xN para los cromos sobrantes', () => {
+        const repetidas = [
+            {
+                quantity: 2,
+                stickers: {
+                    sticker_number: 10,
+                    teams: { name: 'Argentina' }
+                }
+            },
+            {
+                quantity: 3,
+                stickers: {
+                    sticker_number: 12,
+                    teams: { name: 'Argentina' }
+                }
+            },
+            {
+                quantity: 2,
+                stickers: {
+                    sticker_number: 20,
+                    teams: { name: 'Brasil' }
+                }
+            }
+        ];
+
+        const mensaje = buildWhatsAppMessage(repetidas);
+
+        expect(mensaje).toContain('📌 *ARGENTINA:* 10 (x1), 12 (x2)');
+        expect(mensaje).toContain('📌 *BRASIL:* 20 (x1)');
+    });
+
+    it('debería usar el país Especiales cuando no hay equipo asociado', () => {
+        const repetidas = [
+            {
+                quantity: 2,
+                stickers: {
+                    sticker_number: 99
+                }
+            }
+        ];
+
+        const mensaje = buildWhatsAppMessage(repetidas);
+
+        expect(mensaje).toContain('📌 *ESPECIALES:* 99 (x1)');
     });
 });
