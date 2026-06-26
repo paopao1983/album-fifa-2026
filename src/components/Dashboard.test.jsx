@@ -34,6 +34,43 @@ describe('getNextObjectiveData', () => {
         expect(objetivo.isComplete).toBe(false);
     });
 
+    it('debería priorizar el país con mayor progreso entre los incompletos', () => {
+        const teams = [
+            { id: 'arg', name: 'ARG' },
+            { id: 'bra', name: 'BRA' },
+            { id: 'uru', name: 'URU' }
+        ];
+        const collection = [
+            ...Array.from({ length: 12 }, () => ({ stickers: { team_id: 'arg' } })),
+            ...Array.from({ length: 10 }, () => ({ stickers: { team_id: 'bra' } })),
+            ...Array.from({ length: 8 }, () => ({ stickers: { team_id: 'uru' } }))
+        ];
+        const teamTotals = { arg: 20, bra: 20, uru: 20 };
+
+        const objetivo = getNextObjectiveData(teams, collection, teamTotals);
+
+        expect(objetivo.name).toBe('ARG');
+        expect(objetivo.obtenidos).toBe(12);
+    });
+
+    it('debería resolver empates eligiendo el país con menor total de cromos', () => {
+        const teams = [
+            { id: 'esp', name: 'ESP' },
+            { id: 'fra', name: 'FRA' }
+        ];
+        const collection = [
+            ...Array.from({ length: 10 }, () => ({ stickers: { team_id: 'esp' } })),
+            ...Array.from({ length: 10 }, () => ({ stickers: { team_id: 'fra' } }))
+        ];
+        const teamTotals = { esp: 20, fra: 15 };
+
+        const objetivo = getNextObjectiveData(teams, collection, teamTotals);
+
+        expect(objetivo.name).toBe('FRA');
+        expect(objetivo.obtenidos).toBe(10);
+        expect(objetivo.totales).toBe(15);
+    });
+
     it('debería marcar el álbum como completo cuando no queden países pendientes', () => {
         const teams = [
             { id: 'mex', name: 'MEX' },
