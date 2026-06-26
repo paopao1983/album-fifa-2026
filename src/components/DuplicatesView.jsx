@@ -1,21 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
+export function buildWhatsAppMessage(repetidas) {
+    if (!repetidas.length) return '';
+
+    const agrupadosPorPais = repetidas.reduce((acc, item) => {
+        const pais = item.stickers?.teams?.name || 'Especiales';
+        const numero = item.stickers?.sticker_number || '';
+        const cantidadSobrante = Math.max(item.quantity - 1, 0);
+        const textoCromo = `${numero}${cantidadSobrante > 0 ? ` (x${cantidadSobrante})` : ''}`;
+
+        if (!acc[pais]) acc[pais] = [];
+        acc[pais].push(textoCromo);
+
+        return acc;
+    }, {});
+
+    let mensaje = `*🃏 MIS REPETIDAS — ÁLBUM FIFA 2026* ⚽\n`;
+    mensaje += `_¿Te falta alguno? ¡Cambiemos!_ 🤝\n\n`;
+
+    Object.entries(agrupadosPorPais).forEach(([pais, cromos]) => {
+        mensaje += `📌 *${pais.toUpperCase()}:* ${cromos.join(', ')}\n`;
+    });
+
+    return mensaje;
+}
+
 export function DuplicatesView({ session }) {
     const [loading, setLoading] = useState(true);
     const [repetidas, setRepetidas] = useState([]);
 
     useEffect(() => {
-        if (session) {
-            cargarRepetidas();
+        const userId = session?.user?.id;
+        if (userId) {
+            cargarRepetidas(userId);
+        } else {
+            setRepetidas([]);
+            setLoading(false);
         }
-    }, [session]);
+    }, [session?.user?.id]);
 
-    async function cargarRepetidas() {
+    async function cargarRepetidas(userId) {
         try {
             setLoading(true);
 
-            // Consultamos solo los cromos donde cantidad sea mayor a 1
             const { data, error } = await supabase
                 .from('user_collection')
                 .select(`
@@ -27,8 +55,8 @@ export function DuplicatesView({ session }) {
             teams ( name )
           )
         `)
-                .eq('user_id', session.user.id)
-                .gt('quantity', 1); // Trae solo lo que te sobra
+                .eq('user_id', userId)
+                .gt('quantity', 1);
 
             if (error) throw error;
             setRepetidas(data || []);
@@ -39,14 +67,34 @@ export function DuplicatesView({ session }) {
         }
     }
 
+    const handleCompartirWhatsApp = () => {
+        const mensaje = buildWhatsAppMessage(repetidas);
+        if (!mensaje) return;
+
+        const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+        window.open(urlWhatsApp, '_blank');
+    };
+
     return (
-        <div className="w-full max-w-md px-4 pt-6 flex flex-col gap-4">
+        <div className="w-full max-w-md px-4 pt-6 flex flex-col gap-4 select-none pb-24 text-slate-200">
+
+            {/* Encabezado */}
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold tracking-wide text-slate-100">Mis Repetidas</h2>
                 <span className="bg-yellow-400/10 text-yellow-400 text-xs font-bold px-3 py-1 rounded-full border border-yellow-400/20">
                     Para Cambiar 🤝
                 </span>
             </div>
+
+            {/* 🔥 BOTÓN COMPARTIR: Solo se muestra si el usuario tiene repetidas reales */}
+            {!loading && repetidas.length > 0 && (
+                <button
+                    onClick={handleCompartirWhatsApp}
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all border border-emerald-400 mt-1"
+                >
+                    💬 Compartir Repetidas por WhatsApp
+                </button>
+            )}
 
             {loading ? (
                 <p className="text-center text-slate-500 text-sm py-12 animate-pulse">Revisando tu fajo de repetidas...</p>
@@ -60,13 +108,13 @@ export function DuplicatesView({ session }) {
             ) : (
                 /* Lista de repetidas */
                 <div className="flex flex-col gap-3">
-                    {repetidas.map((item, index) => {
-                        // Un cromo repetido significa que tienes (cantidad total - 1) para dar
+                    {repetidas.map((item) => {
                         const disponiblesParaCambio = item.quantity - 1;
+                        const stickerId = item.stickers?.id || `${item.stickers?.sticker_number}-${item.stickers?.name}`;
 
                         return (
                             <div
-                                key={index}
+                                key={stickerId}
                                 className="bg-[#161f30] border border-slate-800/60 p-4 rounded-2xl flex items-center justify-between shadow-md"
                             >
                                 <div className="flex flex-col gap-0.5 max-w-[70%]">
