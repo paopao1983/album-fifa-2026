@@ -474,6 +474,27 @@ export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
                 </button>
             </div>
 
+            {/* 💰 SECCIÓN PREMIUM DE MONETIZACIÓN: EL CAFECITO COMUNITARIO */}
+            <div className="bg-gradient-to-br from-amber-500/10 via-[#161f30]/40 to-[#161f30]/70 p-4 rounded-2xl border border-amber-500/20 shadow-[0_0_0_1px_rgba(251,191,36,0.06),0_12px_30px_rgba(0,0,0,0.22)] flex flex-col gap-2.5 mt-1 hover:border-amber-500/40 transition-all">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0">
+                        <span className="text-xl">☕</span>
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="text-[11px] font-black tracking-[0.24em] text-amber-300 uppercase mb-1">Sostén el proyecto</h4>
+                        <p className="text-[11px] font-semibold text-slate-400 tracking-wide leading-relaxed">
+                            Si esta app te ayudó a organizar tu álbum, compartir repetidas y seguir el progreso, puedes apoyar el proyecto con un cafecito.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => window.open('https://ko-fi.com/paocastro', '_blank')}
+                    className="w-full bg-amber-500/15 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-black py-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                    Invitar un cafecito · $2 USD ➡️
+                </button>
+            </div>
+
             {/* ========================================================================= */}
             {/* 🔥 MODAL 1: BUSCADOR PREDICTIVO COMPLETO */}
             {modalBuscarActivo && (
