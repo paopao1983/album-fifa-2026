@@ -31,5 +31,24 @@ describe('getNextObjectiveData', () => {
         expect(objetivo.name).toBe('RSA');
         expect(objetivo.obtenidos).toBe(5);
         expect(objetivo.totales).toBe(20);
+        expect(objetivo.isComplete).toBe(false);
+    });
+
+    it('debería marcar el álbum como completo cuando no queden países pendientes', () => {
+        const teams = [
+            { id: 'mex', name: 'MEX' },
+            { id: 'rsa', name: 'RSA' }
+        ];
+        const collection = [
+            ...Array.from({ length: 20 }, () => ({ stickers: { team_id: 'mex' } })),
+            ...Array.from({ length: 20 }, () => ({ stickers: { team_id: 'rsa' } }))
+        ];
+        const teamTotals = { mex: 20, rsa: 20 };
+
+        const objetivo = getNextObjectiveData(teams, collection, teamTotals);
+
+        expect(objetivo.name).toBe('Álbum completo');
+        expect(objetivo.isComplete).toBe(true);
+        expect(objetivo.teamId).toBeNull();
     });
 });

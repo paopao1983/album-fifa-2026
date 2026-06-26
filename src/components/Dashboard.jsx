@@ -20,10 +20,11 @@ export function getNextObjectiveData(teams, collection, teamTotals) {
 
     if (equiposConProgreso.length === 0) {
         return {
-            name: 'Completa tu álbum',
+            name: 'Álbum completo',
             obtenidos: 0,
             totales: 0,
-            teamId: null
+            teamId: null,
+            isComplete: true
         };
     }
 
@@ -36,10 +37,11 @@ export function getNextObjectiveData(teams, collection, teamTotals) {
     })[0];
 
     return {
-        name: objetivo ? objetivo.name : 'Completa tu álbum',
+        name: objetivo ? objetivo.name : 'Álbum completo',
         obtenidos: objetivo ? objetivo.obtenidos : 0,
         totales: objetivo ? objetivo.totales : 0,
-        teamId: objetivo ? objetivo.id : null
+        teamId: objetivo ? objetivo.id : null,
+        isComplete: false
     };
 }
 
@@ -47,7 +49,7 @@ export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
     // Estados de datos generales del Inicio
     const [stats, setStats] = useState({ obtenidos: 0, totales: 0, especialesObtenidas: 0, especialesTotales: 68, repetidas: 0 });
     const [ultimosAgregados, setUltimosAgregados] = useState([]);
-    const [proximoObjetivo, setProximoObjetivo] = useState({ name: 'Cargando objetivo...', obtenidos: 0, totales: 0, teamId: null });
+    const [proximoObjetivo, setProximoObjetivo] = useState({ name: 'Cargando objetivo...', obtenidos: 0, totales: 0, teamId: null, isComplete: false });
     const [loading, setLoading] = useState(true);
 
     // 🔥 Estados para el Buscador Predictivo del Home
@@ -107,7 +109,7 @@ export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
             if (!userId) {
                 setUltimosAgregados([]);
                 setStats({ obtenidos: 0, totales: 0, especialesObtenidas: 0, especialesTotales: 68, repetidas: 0 });
-                setProximoObjetivo({ name: 'Inicia sesión para ver tu objetivo', obtenidos: 0, totales: 0, teamId: null });
+                setProximoObjetivo({ name: 'Inicia sesión para ver tu objetivo', obtenidos: 0, totales: 0, teamId: null, isComplete: false });
                 return;
             }
 
@@ -164,7 +166,8 @@ export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
                 name: objetivo.name,
                 obtenidos: objetivo.obtenidos,
                 totales: objetivo.totales,
-                teamId: objetivo.teamId
+                teamId: objetivo.teamId,
+                isComplete: objetivo.isComplete || false
             });
 
             // 3. Obtener los últimos 3 cromos que siguen presentes en la colección del usuario
@@ -453,19 +456,21 @@ export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
             </div>
 
             {/* 6. Próximo Objetivo */}
-            <div className="bg-[#161f30]/60 p-4 rounded-2xl border border-slate-800/50 shadow-sm flex flex-col gap-2.5">
-                <h3 className="text-xs font-black tracking-wider text-slate-400 uppercase flex items-center gap-1.5">🎯 Próximo objetivo</h3>
-                <div className="bg-slate-950/40 border border-slate-900/60 p-3 rounded-xl flex items-center justify-between">
+            <div className={`p-4 rounded-2xl border shadow-sm flex flex-col gap-2.5 ${proximoObjetivo.isComplete ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-[#161f30]/60 border-slate-800/50'}`}>
+                <h3 className={`text-xs font-black tracking-wider uppercase flex items-center gap-1.5 ${proximoObjetivo.isComplete ? 'text-emerald-300' : 'text-slate-400'}`}>🎯 Próximo objetivo</h3>
+                <div className={`border p-3 rounded-xl flex items-center justify-between ${proximoObjetivo.isComplete ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-950/40 border-slate-900/60'}`}>
                     <div className="flex items-center gap-2.5">
-                        <span className="text-xl">🏳️</span>
+                        <span className="text-xl">{proximoObjetivo.isComplete ? '🏁' : '🏳️'}</span>
                         <div>
-                            <p className="text-xs font-black text-slate-200 tracking-wide">{proximoObjetivo.name}</p>
-                            <p className="text-[10px] font-bold text-slate-500 font-mono">{proximoObjetivo.obtenidos} / {proximoObjetivo.totales} cromos</p>
+                            <p className={`text-xs font-black tracking-wide ${proximoObjetivo.isComplete ? 'text-emerald-200' : 'text-slate-200'}`}>{proximoObjetivo.name}</p>
+                            <p className={`text-[10px] font-bold font-mono ${proximoObjetivo.isComplete ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                {proximoObjetivo.isComplete ? '¡Has completado tu álbum!' : `${proximoObjetivo.obtenidos} / ${proximoObjetivo.totales} cromos`}
+                            </p>
                         </div>
                     </div>
                 </div>
-                <button onClick={() => onNavigateToTeam(proximoObjetivo.teamId || null)} className="w-full bg-[#111827] border border-slate-800 text-[11px] font-black text-slate-300 py-2.5 rounded-xl hover:text-white transition-colors">
-                    Ver colección
+                <button onClick={() => onNavigateToTeam(proximoObjetivo.teamId || null)} className={`w-full border text-[11px] font-black py-2.5 rounded-xl transition-colors ${proximoObjetivo.isComplete ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-200 hover:text-white' : 'bg-[#111827] border-slate-800 text-slate-300 hover:text-white'}`}>
+                    {proximoObjetivo.isComplete ? 'Álbum completo' : 'Ver colección'}
                 </button>
             </div>
 
