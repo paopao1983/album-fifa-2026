@@ -1,6 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
+export function getNextObjectiveData(teams, collection, teamTotals) {
+    const coleccionActiva = (collection || []).filter(item => ((item.quantity ?? 1) > 0) && item.stickers?.team_id);
+
+    const equiposConProgreso = (teams || [])
+        .map(team => {
+            const total = teamTotals?.[team.id] || 0;
+            const obtenidos = coleccionActiva.filter(item => item.stickers?.team_id === team.id).length;
+
+            return {
+                id: team.id,
+                name: team.name,
+                obtenidos,
+                totales: total
+            };
+        })
+        .filter(equipo => equipo.totales > 0 && equipo.obtenidos < equipo.totales);
+
+    if (equiposConProgreso.length === 0) {
+        return {
+            name: 'Completa tu álbum',
+            obtenidos: 0,
+            totales: 0,
+            teamId: null
+        };
+    }
+
+    const objetivo = [...equiposConProgreso].sort((a, b) => {
+        if (b.obtenidos !== a.obtenidos) {
+            return b.obtenidos - a.obtenidos;
+        }
+
+        return a.totales - b.totales;
+    })[0];
+
+    return {
+        name: objetivo ? objetivo.name : 'Completa tu álbum',
+        obtenidos: objetivo ? objetivo.obtenidos : 0,
+        totales: objetivo ? objetivo.totales : 0,
+        teamId: objetivo ? objetivo.id : null
+    };
+}
+
 export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
     // Estados de datos generales del Inicio
     const [stats, setStats] = useState({ obtenidos: 0, totales: 0, especialesObtenidas: 0, especialesTotales: 68, repetidas: 0 });
@@ -93,8 +135,12 @@ export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
                 .from('teams')
                 .select('id, name')
                 .order('order_index', { ascending: true });
+            const { data: stickersCatalog, error: errStickers } = await supabase
+                .from('stickers')
+                .select('team_id');
 
             if (errTeams) throw errTeams;
+            if (errStickers) throw errStickers;
 
             setStats({
                 obtenidos: totalObtenidos || 0,
@@ -104,26 +150,21 @@ export function Dashboard({ session, onSignOut, onNavigateToTeam }) {
                 repetidas: totalRepetidas || 0
             });
 
-            const coleccionActiva = (miColeccion || []).filter(item => (item.quantity || 0) > 0);
-            const equiposConProgreso = (teams || [])
-                .map(team => {
-                    const cromosDelEquipo = coleccionActiva.filter(item => item.stickers?.team_id === team.id);
-                    return {
-                        id: team.id,
-                        name: team.name,
-                        obtenidos: cromosDelEquipo.length,
-                        totales: 0
-                    };
-                })
-                .filter(equipo => equipo.obtenidos > 0);
+            const teamTotals = (stickersCatalog || []).reduce((acc, sticker) => {
+                const teamId = sticker.team_id;
+                if (!teamId) return acc;
 
-            const objetivo = equiposConProgreso.sort((a, b) => b.obtenidos - a.obtenidos)[0];
+                acc[teamId] = (acc[teamId] || 0) + 1;
+                return acc;
+            }, {});
+
+            const objetivo = getNextObjectiveData(teams || [], miColeccion || [], teamTotals);
 
             setProximoObjetivo({
-                name: objetivo ? objetivo.name : 'Completa tu álbum',
-                obtenidos: objetivo ? objetivo.obtenidos : 0,
-                totales: objetivo ? Math.max(objetivo.obtenidos, 1) : 0,
-                teamId: objetivo ? objetivo.id : null
+                name: objetivo.name,
+                obtenidos: objetivo.obtenidos,
+                totales: objetivo.totales,
+                teamId: objetivo.teamId
             });
 
             // 3. Obtener los últimos 3 cromos que siguen presentes en la colección del usuario
